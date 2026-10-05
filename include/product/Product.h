@@ -1,38 +1,50 @@
+
+
 #ifndef PRODUCT_H
 #define PRODUCT_H
 
 #include <string>
+#include <iostream>
 
 using namespace std;
 
-class Product {
+class Product
+{
 private:
-    string productId;
+    int id;
     string name;
-    string category;
     double price;
     int stock;
+    string category;
     string description;
     string brand;
     double rating;
 
 public:
+
     // Constructor
     Product(
-        const string& productId,
-        const string& name,
-        const string& category,
+        int id,
+        string name,
         double price,
         int stock,
-        const string& description,
-        const string& brand,
+        string category,
+        string description,
+        string brand,
         double rating
     );
 
-    // Display product details
-    void displayProduct() const;
+    // Getters
+    int getId() const;
+    string getName() const;
+    double getPrice() const;
+    int getStock() const;
+    string getCategory() const;
+    string getDescription() const;
+    string getBrand() const;
+    double getRating() const;
 
-    // Update product details
+    // Setters / Update functions
     void updateDetails(
         const string& name,
         const string& category,
@@ -43,19 +55,11 @@ public:
     );
 
     // Stock management
-    void updateStock(int newStock);
-    void reduceStock(int quantity);
-    void increaseStock(int quantity);
+    bool updateStock(int newStock);
+    bool reduceStock(int quantity);
 
-    // Getters
-    string getProductId() const;
-    string getName() const;
-    string getCategory() const;
-    double getPrice() const;
-    int getStock() const;
-    string getDescription() const;
-    string getBrand() const;
-    double getRating() const;
+    // Display product details
+    void display() const;
 };
 
 #endif

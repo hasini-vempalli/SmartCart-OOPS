@@ -1,8 +1,8 @@
 #include "product/Product.h"
-#include <iostream>
 
 using namespace std;
 
+// Constructor
 Product::Product(
     int id,
     string name,
@@ -12,7 +12,8 @@ Product::Product(
     string description,
     string brand,
     double rating
-) {
+)
+{
     this->id = id;
     this->name = name;
     this->price = price;
@@ -23,50 +24,64 @@ Product::Product(
     this->rating = rating;
 }
 
-// Getters
-
-int Product::getId() const {
+// Get ID
+int Product::getId() const
+{
     return id;
 }
 
-string Product::getName() const {
+// Get Name
+string Product::getName() const
+{
     return name;
 }
 
-string Product::getCategory() const {
-    return category;
-}
-
-double Product::getPrice() const {
+// Get Price
+double Product::getPrice() const
+{
     return price;
 }
 
-int Product::getStock() const {
+// Get Stock
+int Product::getStock() const
+{
     return stock;
 }
 
-string Product::getDescription() const {
+// Get Category
+string Product::getCategory() const
+{
+    return category;
+}
+
+// Get Description
+string Product::getDescription() const
+{
     return description;
 }
 
-string Product::getBrand() const {
+// Get Brand
+string Product::getBrand() const
+{
     return brand;
 }
 
-double Product::getRating() const {
+// Get Rating
+double Product::getRating() const
+{
     return rating;
 }
 
 // Update product details
-
 void Product::updateDetails(
-    string name,
-    string category,
+    const string& name,
+    const string& category,
     double price,
-    string description,
-    string brand,
+    const string& description,
+    const string& brand,
     double rating
-) {
+)
+{
     this->name = name;
     this->category = category;
     this->price = price;
@@ -75,55 +90,46 @@ void Product::updateDetails(
     this->rating = rating;
 }
 
-// Reduce stock
-
-bool Product::reduceStock(int quantity) {
-
-    if (quantity <= 0) {
-        return false;
-    }
-
-    if (quantity > stock) {
-        return false;
-    }
-
-    stock -= quantity;
-
-    return true;
-}
-
-// Increase stock
-
-void Product::increaseStock(int quantity) {
-
-    if (quantity > 0) {
-        stock += quantity;
-    }
-}
-
-// Update stock directly
-
-bool Product::updateStock(int newStock) {
-
-    if (newStock < 0) {
+// Update stock
+bool Product::updateStock(int newStock)
+{
+    if (newStock < 0)
+    {
         return false;
     }
 
     stock = newStock;
-
     return true;
 }
 
-// Display product
+// Reduce stock
+bool Product::reduceStock(int quantity)
+{
+    if (quantity <= 0)
+    {
+        return false;
+    }
 
-void Product::display() const {
+    if (quantity > stock)
+    {
+        return false;
+    }
 
-    cout << id << " | "
-         << name << " | "
-         << category << " | Rs. "
-         << price << " | Stock: "
-         << stock << " | "
-         << brand << " | Rating: "
-         << rating << "/5"
-         << endl;
+    stock -= quantity;
+    return true;
+}
+
+// Display product details
+void Product::display() const
+{
+    cout << "----------------------------------------" << endl;
+    cout << "Product ID    : " << id << endl;
+    cout << "Name          : " << name << endl;
+    cout << "Price         : " << price << endl;
+    cout << "Stock         : " << stock << endl;
+    cout << "Category      : " << category << endl;
+    cout << "Description   : " << description << endl;
+    cout << "Brand         : " << brand << endl;
+    cout << "Rating        : " << rating << endl;
+    cout << "----------------------------------------" << endl;
 }
