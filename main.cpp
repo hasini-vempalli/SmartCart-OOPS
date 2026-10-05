@@ -768,7 +768,7 @@ void placeOrder(
             product->getStock())
         {
             cout << "\nNot enough stock for "
-                 << product->getProductName()
+                 << product->getName()
                  << ".\n";
 
             return;
