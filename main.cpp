@@ -1,10 +1,22 @@
-
-
 #include <iostream>
 #include <string>
+#include <vector>
 #include <cctype>
+#include <ctime>
+#include <limits>
+
+#include "auth/Customer.h"
+#include "auth/Admin.h"
 
 #include "services/AuthService.h"
+#include "services/ProductService.h"
+
+#include "product/Product.h"
+
+#include "cart_order/Cart.h"
+#include "cart_order/CartItem.h"
+#include "cart_order/Order.h"
+#include "cart_order/OrderItem.h"
 
 #include "payment/Payment.h"
 #include "payment/Card.h"
@@ -15,245 +27,1764 @@
 using namespace std;
 
 
-// ======================================================
+// ============================================================
+// GLOBAL ORDER STORAGE
+// ============================================================
+
+vector<Order> allOrders;
+
+
+// ============================================================
 // PHONE VALIDATION
-// ======================================================
+// ============================================================
 
 bool isValidPhone(const string& phone)
 {
     if (phone.length() != 10)
-    {
         return false;
-    }
 
     for (char ch : phone)
     {
         if (!isdigit(static_cast<unsigned char>(ch)))
-        {
             return false;
-        }
     }
 
     return true;
 }
 
 
-// ======================================================
-// PAYMENT MENU - MEMBER 4
-// ======================================================
+// ============================================================
+// DATE
+// ============================================================
 
-void paymentMenu()
+string getCurrentDate()
 {
-    double amount;
+    time_t now = time(nullptr);
+    tm* localTime = localtime(&now);
 
-    cout << "\n========================================" << endl;
-    cout << "          SMARTCART PAYMENT             " << endl;
-    cout << "========================================" << endl;
+    char buffer[20];
 
-    cout << "Enter order amount: Rs. ";
-    cin >> amount;
+    strftime(
+        buffer,
+        sizeof(buffer),
+        "%d-%m-%Y",
+        localTime
+    );
+
+    return string(buffer);
+}
 
 
-    // Check amount
+// ============================================================
+// DEMO PRODUCTS
+// ============================================================
+
+void loadProducts(ProductService& productService)
+{
+    productService.addProduct(
+        Product(
+            101,
+            "Laptop",
+            55000,
+            10,
+            "Electronics",
+            "High performance laptop",
+            "HP",
+            4.5
+        )
+    );
+
+    productService.addProduct(
+        Product(
+            102,
+            "Smartphone",
+            25000,
+            15,
+            "Electronics",
+            "Latest smartphone",
+            "Samsung",
+            4.4
+        )
+    );
+
+    productService.addProduct(
+        Product(
+            103,
+            "Headphones",
+            2500,
+            20,
+            "Electronics",
+            "Wireless headphones",
+            "Boat",
+            4.2
+        )
+    );
+
+    productService.addProduct(
+        Product(
+            104,
+            "Backpack",
+            1800,
+            25,
+            "Accessories",
+            "College backpack",
+            "American Tourister",
+            4.3
+        )
+    );
+
+    productService.addProduct(
+        Product(
+            105,
+            "Smart Watch",
+            3500,
+            12,
+            "Accessories",
+            "Smart watch",
+            "Noise",
+            4.1
+        )
+    );
+}
+
+
+// ============================================================
+// DISPLAY PRODUCTS
+// ============================================================
+
+void displayProducts(ProductService& productService)
+{
+    cout << "\n";
+    cout << "============================================\n";
+    cout << "              AVAILABLE PRODUCTS\n";
+    cout << "============================================\n";
+
+    productService.displayAllProducts();
+
+    cout << "============================================\n";
+}
+
+
+// ============================================================
+// PAYMENT PROCESSING
+// ============================================================
+
+bool processPayment(
+    double amount,
+    string& paymentMethod
+)
+{
     if (amount <= 0)
     {
-        cout << "Invalid amount!" << endl;
-        return;
+        cout << "\nInvalid payment amount!\n";
+        return false;
     }
 
+    cout << "\n";
+    cout << "============================================\n";
+    cout << "               PAYMENT METHOD\n";
+    cout << "============================================\n";
 
-    // ==================================================
-    // COUPON
-    // ==================================================
+    cout << "Amount to Pay : Rs. " << amount << "\n\n";
 
-    char useCoupon;
+    cout << "1. Card\n";
+    cout << "2. UPI\n";
+    cout << "3. Cash on Delivery\n";
+    cout << "4. Cancel\n";
 
-    cout << "\nDo you have a coupon? (y/n): ";
-    cin >> useCoupon;
+    cout << "\nEnter choice: ";
 
-
-    if (useCoupon == 'y' || useCoupon == 'Y')
-    {
-        string couponCode;
-
-        cout << "Enter coupon code: ";
-        cin >> couponCode;
-
-
-        // Demo coupon
-        Coupon coupon(
-            "SAVE10",
-            10.0,
-            0.0,
-            500.0,
-            "31-12-2026",
-            true
-        );
-
-
-        if (couponCode == coupon.getCode() &&
-            coupon.isValid(amount))
-        {
-            double discount =
-                coupon.calculateDiscount(amount);
-
-            cout << "\nCoupon applied successfully!" << endl;
-
-            cout << "Coupon   : "
-                 << coupon.getCode() << endl;
-
-            cout << "Discount : Rs. "
-                 << discount << endl;
-
-            amount =
-                coupon.applyCoupon(amount);
-
-            cout << "Final Amount: Rs. "
-                 << amount << endl;
-        }
-        else
-        {
-            cout << "Invalid or expired coupon!" << endl;
-        }
-    }
-
-
-    // ==================================================
-    // PAYMENT METHOD
-    // ==================================================
-
-    cout << "\n===== PAYMENT METHOD =====" << endl;
-
-    cout << "1. Card" << endl;
-    cout << "2. UPI" << endl;
-    cout << "3. Cash on Delivery" << endl;
-    cout << "4. Cancel" << endl;
-
-    cout << "Enter choice: ";
-
-    int paymentChoice;
-    cin >> paymentChoice;
-
+    int choice;
+    cin >> choice;
 
     Payment* payment = nullptr;
 
 
-    // ==================================================
+    // --------------------------------------------------------
     // CARD
-    // ==================================================
+    // --------------------------------------------------------
 
-    if (paymentChoice == 1)
+    if (choice == 1)
     {
         payment = new Card();
     }
 
 
-    // ==================================================
+    // --------------------------------------------------------
     // UPI
-    // ==================================================
+    // --------------------------------------------------------
 
-    else if (paymentChoice == 2)
+    else if (choice == 2)
     {
         payment = new UPI();
     }
 
 
-    // ==================================================
-    // CASH ON DELIVERY
-    // ==================================================
+    // --------------------------------------------------------
+    // COD
+    // --------------------------------------------------------
 
-    else if (paymentChoice == 3)
+    else if (choice == 3)
     {
         payment = new CashOnDelivery();
     }
 
 
-    // ==================================================
+    // --------------------------------------------------------
     // CANCEL
-    // ==================================================
+    // --------------------------------------------------------
 
-    else if (paymentChoice == 4)
+    else if (choice == 4)
     {
-        cout << "\nPayment cancelled." << endl;
-        return;
+        cout << "\nPayment cancelled.\n";
+        return false;
     }
 
 
     else
     {
-        cout << "\nInvalid payment choice!" << endl;
-        return;
+        cout << "\nInvalid payment choice!\n";
+        return false;
     }
 
 
-    // ==================================================
-    // PROCESS PAYMENT
-    // ==================================================
-
-    cout << "\n===== PROCESSING PAYMENT =====" << endl;
+    // --------------------------------------------------------
+    // PAY
+    // --------------------------------------------------------
 
     bool success = payment->pay(amount);
 
 
     if (success)
     {
-        cout << "\n========================================" << endl;
-        cout << "         PAYMENT SUCCESSFUL             " << endl;
-        cout << "========================================" << endl;
+        paymentMethod =
+            payment->getPaymentMethod();
+
+        cout << "\n";
+        cout << "============================================\n";
+        cout << "             PAYMENT SUCCESSFUL\n";
+        cout << "============================================\n";
 
         cout << "Payment Method : "
-             << payment->getPaymentMethod()
-             << endl;
+             << paymentMethod << "\n";
 
         cout << "Amount Paid    : Rs. "
-             << amount
-             << endl;
+             << amount << "\n";
 
-        cout << "Status         : SUCCESS"
-             << endl;
+        cout << "Status         : SUCCESS\n";
 
-        cout << "========================================" << endl;
+        cout << "============================================\n";
     }
     else
     {
-        cout << "\nPayment failed!" << endl;
+        cout << "\nPayment failed!\n";
     }
 
 
     delete payment;
+
+    return success;
 }
 
 
-// ======================================================
+// ============================================================
+// COUPON PROCESSING
+// ============================================================
+
+double applyCoupon(
+    double subtotal,
+    double& discount
+)
+{
+    discount = 0;
+
+    char choice;
+
+    cout << "\nDo you have a coupon? (y/n): ";
+    cin >> choice;
+
+
+    if (choice != 'y' && choice != 'Y')
+    {
+        return subtotal;
+    }
+
+
+    string code;
+
+    cout << "Enter coupon code: ";
+    cin >> code;
+
+
+    // Demo coupon
+    Coupon coupon(
+        "SAVE10",
+        10.0,
+        0.0,
+        500.0,
+        "31-12-2026",
+        true
+    );
+
+
+    if (
+        code == coupon.getCode() &&
+        coupon.isValid(subtotal)
+    )
+    {
+        discount =
+            coupon.calculateDiscount(subtotal);
+
+        double finalAmount =
+            coupon.applyCoupon(subtotal);
+
+
+        cout << "\n";
+        cout << "Coupon applied successfully!\n";
+
+        cout << "Coupon   : "
+             << coupon.getCode() << "\n";
+
+        cout << "Discount : Rs. "
+             << discount << "\n";
+
+        cout << "Final Amount : Rs. "
+             << finalAmount << "\n";
+
+
+        return finalAmount;
+    }
+
+
+    cout << "\nInvalid or unavailable coupon!\n";
+
+    return subtotal;
+}
+
+
+// ============================================================
+// ADD PRODUCT TO CART
+// ============================================================
+
+void addToCart(
+    Cart& cart,
+    ProductService& productService
+)
+{
+    displayProducts(productService);
+
+
+    int productId;
+    int quantity;
+
+
+    cout << "\nEnter Product ID: ";
+    cin >> productId;
+
+
+    Product* product =
+        productService.findProductById(productId);
+
+
+    if (product == nullptr)
+    {
+        cout << "\nProduct not found!\n";
+        return;
+    }
+
+
+    cout << "\n";
+    cout << "Product Name : "
+         << product->getName() << "\n";
+
+    cout << "Price        : Rs. "
+         << product->getPrice() << "\n";
+
+    cout << "Stock        : "
+         << product->getStock() << "\n";
+
+
+    cout << "\nEnter Quantity: ";
+    cin >> quantity;
+
+
+    if (quantity <= 0)
+    {
+        cout << "\nInvalid quantity!\n";
+        return;
+    }
+
+
+    if (quantity > product->getStock())
+    {
+        cout << "\nNot enough stock!\n";
+        return;
+    }
+
+
+    cart.addProduct(
+        to_string(product->getId()),
+        product->getName(),
+        product->getPrice(),
+        quantity
+    );
+
+
+    cout << "\n";
+    cout << "Product added to cart successfully!\n";
+}
+
+
+// ============================================================
+// SHOPPING CART MENU
+// ============================================================
+
+void cartMenu(
+    Cart& cart,
+    ProductService& productService
+)
+{
+    while (true)
+    {
+        cout << "\n";
+        cout << "============================================\n";
+        cout << "               SHOPPING CART\n";
+        cout << "============================================\n";
+
+        cout << "1. View Available Products\n";
+        cout << "2. Add Product to Cart\n";
+        cout << "3. View Cart\n";
+        cout << "4. Increase Quantity\n";
+        cout << "5. Decrease Quantity\n";
+        cout << "6. Remove Product\n";
+        cout << "7. Clear Cart\n";
+        cout << "8. View Cart Total\n";
+        cout << "9. Back\n";
+
+        cout << "\nEnter choice: ";
+
+        int choice;
+        cin >> choice;
+
+
+        // ----------------------------------------------------
+        // VIEW PRODUCTS
+        // ----------------------------------------------------
+
+        if (choice == 1)
+        {
+            displayProducts(productService);
+        }
+
+
+        // ----------------------------------------------------
+        // ADD PRODUCT
+        // ----------------------------------------------------
+
+        else if (choice == 2)
+        {
+            addToCart(
+                cart,
+                productService
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // VIEW CART
+        // ----------------------------------------------------
+
+        else if (choice == 3)
+        {
+            if (cart.isEmpty())
+            {
+                cout << "\nYour cart is empty!\n";
+            }
+            else
+            {
+                cart.displayCart();
+            }
+        }
+
+
+        // ----------------------------------------------------
+        // INCREASE
+        // ----------------------------------------------------
+
+        else if (choice == 4)
+        {
+            if (cart.isEmpty())
+            {
+                cout << "\nYour cart is empty!\n";
+                continue;
+            }
+
+
+            string productId;
+            int amount;
+
+
+            cout << "\nEnter Product ID: ";
+            cin >> productId;
+
+
+            cout << "Enter quantity to increase: ";
+            cin >> amount;
+
+
+            if (amount <= 0)
+            {
+                cout << "\nInvalid quantity!\n";
+                continue;
+            }
+
+
+            cart.increaseQuantity(
+                productId,
+                amount
+            );
+
+
+            cout << "\nQuantity increased!\n";
+        }
+
+
+        // ----------------------------------------------------
+        // DECREASE
+        // ----------------------------------------------------
+
+        else if (choice == 5)
+        {
+            if (cart.isEmpty())
+            {
+                cout << "\nYour cart is empty!\n";
+                continue;
+            }
+
+
+            string productId;
+            int amount;
+
+
+            cout << "\nEnter Product ID: ";
+            cin >> productId;
+
+
+            cout << "Enter quantity to decrease: ";
+            cin >> amount;
+
+
+            if (amount <= 0)
+            {
+                cout << "\nInvalid quantity!\n";
+                continue;
+            }
+
+
+            cart.decreaseQuantity(
+                productId,
+                amount
+            );
+
+
+            cout << "\nQuantity decreased!\n";
+        }
+
+
+        // ----------------------------------------------------
+        // REMOVE
+        // ----------------------------------------------------
+
+        else if (choice == 6)
+        {
+            if (cart.isEmpty())
+            {
+                cout << "\nYour cart is empty!\n";
+                continue;
+            }
+
+
+            string productId;
+
+
+            cout << "\nEnter Product ID: ";
+            cin >> productId;
+
+
+            cart.removeProduct(productId);
+
+
+            cout << "\nProduct removed from cart!\n";
+        }
+
+
+        // ----------------------------------------------------
+        // CLEAR
+        // ----------------------------------------------------
+
+        else if (choice == 7)
+        {
+            cart.clearCart();
+
+            cout << "\nCart cleared successfully!\n";
+        }
+
+
+        // ----------------------------------------------------
+        // TOTAL
+        // ----------------------------------------------------
+
+        else if (choice == 8)
+        {
+            double total =
+                cart.calculateSubtotal();
+
+
+            cout << "\n";
+            cout << "============================================\n";
+            cout << "Cart Total : Rs. "
+                 << total << "\n";
+            cout << "============================================\n";
+        }
+
+
+        // ----------------------------------------------------
+        // BACK
+        // ----------------------------------------------------
+
+        else if (choice == 9)
+        {
+            break;
+        }
+
+
+        else
+        {
+            cout << "\nInvalid choice!\n";
+        }
+    }
+}
+
+
+// ============================================================
+// PLACE ORDER
+// ============================================================
+
+void placeOrder(
+    Cart& cart,
+    ProductService& productService,
+    Customer* customer
+)
+{
+    if (cart.isEmpty())
+    {
+        cout << "\nYour cart is empty!\n";
+        cout << "Add products before placing an order.\n";
+        return;
+    }
+
+
+    cout << "\n";
+    cout << "============================================\n";
+    cout << "                CHECKOUT\n";
+    cout << "============================================\n";
+
+
+    double subtotal =
+        cart.calculateSubtotal();
+
+
+    cout << "Subtotal : Rs. "
+         << subtotal << "\n";
+
+
+    // --------------------------------------------------------
+    // COUPON
+    // --------------------------------------------------------
+
+    double discount = 0;
+
+
+    double finalAmount =
+        applyCoupon(
+            subtotal,
+            discount
+        );
+
+
+    cout << "\nAmount to Pay : Rs. "
+         << finalAmount << "\n";
+
+
+    // --------------------------------------------------------
+    // PAYMENT
+    // --------------------------------------------------------
+
+    string paymentMethod;
+
+
+    bool paymentSuccess =
+        processPayment(
+            finalAmount,
+            paymentMethod
+        );
+
+
+    if (!paymentSuccess)
+    {
+        cout << "\nOrder was not placed.\n";
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // CHECK STOCK AGAIN
+    // --------------------------------------------------------
+
+    vector<CartItem> cartItems =
+        cart.getItems();
+
+
+    for (const CartItem& item : cartItems)
+    {
+        int productId =
+            stoi(item.getProductId());
+
+
+        Product* product =
+            productService.findProductById(
+                productId
+            );
+
+
+        if (product == nullptr)
+        {
+            cout << "\nProduct no longer exists.\n";
+            return;
+        }
+
+
+        if (item.getQuantity() >
+            product->getStock())
+        {
+            cout << "\nNot enough stock for "
+                 << product->getProductName()
+                 << ".\n";
+
+            return;
+        }
+    }
+
+
+    // --------------------------------------------------------
+    // CREATE ORDER ITEMS
+    // --------------------------------------------------------
+
+    vector<OrderItem> orderItems;
+
+
+    for (const CartItem& item : cartItems)
+    {
+        OrderItem orderItem(
+            item.getProductId(),
+            item.getProductName(),
+            item.getPrice(),
+            item.getQuantity()
+        );
+
+
+        orderItems.push_back(
+            orderItem
+        );
+    }
+
+
+    // --------------------------------------------------------
+    // GENERATE ORDER ID
+    // --------------------------------------------------------
+
+    static int orderNumber = 1001;
+
+
+    string orderId =
+        "ORD" +
+        to_string(orderNumber++);
+
+
+    // --------------------------------------------------------
+    // CUSTOMER ID
+    // --------------------------------------------------------
+
+    string customerId =
+        customer->getUserId();
+
+
+    // --------------------------------------------------------
+    // CREATE ORDER
+    // --------------------------------------------------------
+
+    Order order(
+        orderId,
+        customerId,
+        orderItems,
+        subtotal,
+        discount,
+        finalAmount,
+        paymentMethod,
+        getCurrentDate()
+    );
+
+
+    // --------------------------------------------------------
+    // REDUCE STOCK
+    // --------------------------------------------------------
+
+    for (const CartItem& item : cartItems)
+    {
+        int productId =
+            stoi(item.getProductId());
+
+
+        Product* product =
+            productService.findProductById(
+                productId
+            );
+
+
+        if (product != nullptr)
+        {
+            product->reduceStock(
+                item.getQuantity()
+            );
+        }
+    }
+
+
+    // --------------------------------------------------------
+    // SAVE ORDER
+    // --------------------------------------------------------
+
+    allOrders.push_back(order);
+
+
+    // --------------------------------------------------------
+    // CLEAR CART
+    // --------------------------------------------------------
+
+    cart.clearCart();
+
+
+    // --------------------------------------------------------
+    // DISPLAY ORDER
+    // --------------------------------------------------------
+
+    cout << "\n";
+    cout << "============================================\n";
+    cout << "          ORDER PLACED SUCCESSFULLY\n";
+    cout << "============================================\n";
+
+
+    order.displayOrder();
+
+
+    cout << "\nYour cart has been cleared.\n";
+
+    cout << "Thank you for shopping with SmartCart!\n";
+}
+
+
+// ============================================================
+// VIEW CUSTOMER ORDERS
+// ============================================================
+
+void viewOrders(Customer* customer)
+{
+    string customerId =
+        customer->getUserId();
+
+
+    bool found = false;
+
+
+    cout << "\n";
+    cout << "============================================\n";
+    cout << "                MY ORDERS\n";
+    cout << "============================================\n";
+
+
+    for (Order& order : allOrders)
+    {
+        if (order.getCustomerId() ==
+            customerId)
+        {
+            found = true;
+
+            order.displayOrder();
+        }
+    }
+
+
+    if (!found)
+    {
+        cout << "\nYou have no orders yet.\n";
+    }
+}
+
+
+// ============================================================
+// CANCEL ORDER
+// ============================================================
+
+void cancelOrder(Customer* customer)
+{
+    string customerId =
+        customer->getUserId();
+
+
+    vector<int> indexes;
+
+
+    for (int i = 0;
+         i < static_cast<int>(allOrders.size());
+         i++)
+    {
+        if (
+            allOrders[i].getCustomerId()
+            == customerId
+        )
+        {
+            indexes.push_back(i);
+        }
+    }
+
+
+    if (indexes.empty())
+    {
+        cout << "\nYou have no orders.\n";
+        return;
+    }
+
+
+    cout << "\n";
+    cout << "============================================\n";
+    cout << "             CANCEL ORDER\n";
+    cout << "============================================\n";
+
+
+    for (int index : indexes)
+    {
+        cout << "\nOrder ID : "
+             << allOrders[index].getOrderId();
+
+        cout << "\nAmount   : Rs. "
+             << allOrders[index].getFinalAmount();
+
+        cout << "\nStatus   : ";
+
+
+        OrderStatus status =
+            allOrders[index].getStatus();
+
+
+        if (status == OrderStatus::PLACED)
+            cout << "PLACED";
+
+        else if (status == OrderStatus::CONFIRMED)
+            cout << "CONFIRMED";
+
+        else if (status == OrderStatus::SHIPPED)
+            cout << "SHIPPED";
+
+        else if (status == OrderStatus::OUT_FOR_DELIVERY)
+            cout << "OUT FOR DELIVERY";
+
+        else if (status == OrderStatus::DELIVERED)
+            cout << "DELIVERED";
+
+        else
+            cout << "CANCELLED";
+
+
+        cout << "\n";
+    }
+
+
+    string orderId;
+
+
+    cout << "\nEnter Order ID to cancel: ";
+    cin >> orderId;
+
+
+    for (Order& order : allOrders)
+    {
+        if (
+            order.getOrderId() ==
+            orderId &&
+            order.getCustomerId() ==
+            customerId
+        )
+        {
+            if (order.canCancel())
+            {
+                order.cancel();
+
+
+                cout << "\nOrder "
+                     << orderId
+                     << " cancelled successfully!\n";
+            }
+            else
+            {
+                cout << "\nThis order cannot be cancelled.\n";
+            }
+
+
+            return;
+        }
+    }
+
+
+    cout << "\nOrder not found!\n";
+}
+
+
+// ============================================================
+// CUSTOMER MENU
+// ============================================================
+
+void customerMenu(
+    Customer* customer,
+    ProductService& productService
+)
+{
+    // Every logged-in customer gets a cart
+    Cart customerCart;
+
+
+    while (true)
+    {
+        cout << "\n";
+        cout << "============================================\n";
+        cout << "              CUSTOMER MENU\n";
+        cout << "============================================\n";
+
+        cout << "1. View Profile\n";
+        cout << "2. Update Profile\n";
+        cout << "3. View Products\n";
+        cout << "4. Shopping Cart\n";
+        cout << "5. Place Order\n";
+        cout << "6. My Orders\n";
+        cout << "7. Cancel Order\n";
+        cout << "8. Logout\n";
+
+
+        cout << "\nEnter choice: ";
+
+
+        int choice;
+        cin >> choice;
+
+
+        // ----------------------------------------------------
+        // PROFILE
+        // ----------------------------------------------------
+
+        if (choice == 1)
+        {
+            customer->displayProfile();
+        }
+
+
+        // ----------------------------------------------------
+        // UPDATE PROFILE
+        // ----------------------------------------------------
+
+        else if (choice == 2)
+        {
+            cout << "\n";
+            cout << "============================================\n";
+            cout << "             UPDATE PROFILE\n";
+            cout << "============================================\n";
+
+            cout << "1. Update Name\n";
+            cout << "2. Update Phone\n";
+            cout << "3. Update Address\n";
+
+
+            cout << "\nEnter choice: ";
+
+
+            int updateChoice;
+            cin >> updateChoice;
+
+
+            // NAME
+            if (updateChoice == 1)
+            {
+                string name;
+
+
+                cout << "Enter new name: ";
+                cin >> name;
+
+
+                customer->setName(name);
+
+
+                cout << "\nName updated successfully!\n";
+            }
+
+
+            // PHONE
+            else if (updateChoice == 2)
+            {
+                string phone;
+
+
+                cout << "Enter new phone: ";
+                cin >> phone;
+
+
+                if (isValidPhone(phone))
+                {
+                    customer->setPhone(phone);
+
+                    cout << "\nPhone updated successfully!\n";
+                }
+                else
+                {
+                    cout << "\nInvalid phone number!\n";
+                }
+            }
+
+
+            // ADDRESS
+            else if (updateChoice == 3)
+            {
+                string address;
+
+
+                cout << "Enter new address: ";
+                cin >> address;
+
+
+                customer->setAddress(address);
+
+
+                cout << "\nAddress updated successfully!\n";
+            }
+
+
+            else
+            {
+                cout << "\nInvalid choice!\n";
+            }
+        }
+
+
+        // ----------------------------------------------------
+        // PRODUCTS
+        // ----------------------------------------------------
+
+        else if (choice == 3)
+        {
+            displayProducts(
+                productService
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // CART
+        // ----------------------------------------------------
+
+        else if (choice == 4)
+        {
+            cartMenu(
+                customerCart,
+                productService
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // PLACE ORDER
+        // ----------------------------------------------------
+
+        else if (choice == 5)
+        {
+            placeOrder(
+                customerCart,
+                productService,
+                customer
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // MY ORDERS
+        // ----------------------------------------------------
+
+        else if (choice == 6)
+        {
+            viewOrders(customer);
+        }
+
+
+        // ----------------------------------------------------
+        // CANCEL ORDER
+        // ----------------------------------------------------
+
+        else if (choice == 7)
+        {
+            cancelOrder(customer);
+        }
+
+
+        // ----------------------------------------------------
+        // LOGOUT
+        // ----------------------------------------------------
+
+        else if (choice == 8)
+        {
+            cout << "\nLogged out successfully.\n";
+            break;
+        }
+
+
+        else
+        {
+            cout << "\nInvalid choice!\n";
+        }
+    }
+}
+
+
+// ============================================================
+// ADMIN PRODUCT MENU
+// ============================================================
+
+void adminProductMenu(
+    ProductService& productService
+)
+{
+    while (true)
+    {
+        cout << "\n";
+        cout << "============================================\n";
+        cout << "             ADMIN PRODUCT MENU\n";
+        cout << "============================================\n";
+
+        cout << "1. View All Products\n";
+        cout << "2. Add Product\n";
+        cout << "3. Remove Product\n";
+        cout << "4. Update Product\n";
+        cout << "5. Update Stock\n";
+        cout << "6. Search Product\n";
+        cout << "7. Sort by Price - Low to High\n";
+        cout << "8. Sort by Price - High to Low\n";
+        cout << "9. Sort by Rating\n";
+        cout << "10. Back\n";
+
+
+        cout << "\nEnter choice: ";
+
+
+        int choice;
+        cin >> choice;
+
+
+        // ----------------------------------------------------
+        // VIEW
+        // ----------------------------------------------------
+
+        if (choice == 1)
+        {
+            displayProducts(
+                productService
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // ADD
+        // ----------------------------------------------------
+
+        else if (choice == 2)
+        {
+            int id;
+            string name;
+            double price;
+            int stock;
+            string category;
+            string description;
+            string brand;
+            double rating;
+
+
+            cout << "\nProduct ID: ";
+            cin >> id;
+
+
+            cout << "Name: ";
+            cin >> name;
+
+
+            cout << "Price: ";
+            cin >> price;
+
+
+            cout << "Stock: ";
+            cin >> stock;
+
+
+            cout << "Category: ";
+            cin >> category;
+
+
+            cout << "Description: ";
+            cin >> description;
+
+
+            cout << "Brand: ";
+            cin >> brand;
+
+
+            cout << "Rating: ";
+            cin >> rating;
+
+
+            Product product(
+                id,
+                name,
+                price,
+                stock,
+                category,
+                description,
+                brand,
+                rating
+            );
+
+
+            if (
+                productService.addProduct(product)
+            )
+            {
+                cout << "\nProduct added successfully!\n";
+            }
+            else
+            {
+                cout << "\nProduct ID already exists!\n";
+            }
+        }
+
+
+        // ----------------------------------------------------
+        // REMOVE
+        // ----------------------------------------------------
+
+        else if (choice == 3)
+        {
+            int id;
+
+
+            cout << "\nEnter Product ID: ";
+            cin >> id;
+
+
+            if (
+                productService.removeProduct(id)
+            )
+            {
+                cout << "\nProduct removed successfully!\n";
+            }
+            else
+            {
+                cout << "\nProduct not found!\n";
+            }
+        }
+
+
+        // ----------------------------------------------------
+        // UPDATE PRODUCT
+        // ----------------------------------------------------
+
+        else if (choice == 4)
+        {
+            int id;
+            string name;
+            string category;
+            double price;
+            string description;
+            string brand;
+            double rating;
+
+
+            cout << "\nProduct ID: ";
+            cin >> id;
+
+
+            cout << "New Name: ";
+            cin >> name;
+
+
+            cout << "New Category: ";
+            cin >> category;
+
+
+            cout << "New Price: ";
+            cin >> price;
+
+
+            cout << "New Description: ";
+            cin >> description;
+
+
+            cout << "New Brand: ";
+            cin >> brand;
+
+
+            cout << "New Rating: ";
+            cin >> rating;
+
+
+            if (
+                productService.updateProduct(
+                    id,
+                    name,
+                    category,
+                    price,
+                    description,
+                    brand,
+                    rating
+                )
+            )
+            {
+                cout << "\nProduct updated successfully!\n";
+            }
+            else
+            {
+                cout << "\nProduct not found!\n";
+            }
+        }
+
+
+        // ----------------------------------------------------
+        // STOCK
+        // ----------------------------------------------------
+
+        else if (choice == 5)
+        {
+            int id;
+            int stock;
+
+
+            cout << "\nProduct ID: ";
+            cin >> id;
+
+
+            cout << "New Stock: ";
+            cin >> stock;
+
+
+            if (
+                productService.updateStock(
+                    id,
+                    stock
+                )
+            )
+            {
+                cout << "\nStock updated successfully!\n";
+            }
+            else
+            {
+                cout << "\nUnable to update stock!\n";
+            }
+        }
+
+
+        // ----------------------------------------------------
+        // SEARCH
+        // ----------------------------------------------------
+
+        else if (choice == 6)
+        {
+            string keyword;
+
+
+            cout << "\nEnter search keyword: ";
+            cin >> keyword;
+
+
+            vector<Product> results =
+                productService.searchProducts(
+                    keyword
+                );
+
+
+            cout << "\n";
+            cout << "========== SEARCH RESULTS ==========\n";
+
+
+            if (results.empty())
+            {
+                cout << "No products found.\n";
+            }
+            else
+            {
+                for (const Product& product : results)
+                {
+                    product.display();
+                }
+            }
+
+
+            cout << "====================================\n";
+        }
+
+
+        // ----------------------------------------------------
+        // SORT ASCENDING
+        // ----------------------------------------------------
+
+        else if (choice == 7)
+        {
+            productService.sortByPriceAscending();
+
+            cout << "\nProducts sorted by price!\n";
+
+            displayProducts(productService);
+        }
+
+
+        // ----------------------------------------------------
+        // SORT DESCENDING
+        // ----------------------------------------------------
+
+        else if (choice == 8)
+        {
+            productService.sortByPriceDescending();
+
+            cout << "\nProducts sorted by price!\n";
+
+            displayProducts(productService);
+        }
+
+
+        // ----------------------------------------------------
+        // SORT RATING
+        // ----------------------------------------------------
+
+        else if (choice == 9)
+        {
+            productService.sortByRatingDescending();
+
+            cout << "\nProducts sorted by rating!\n";
+
+            displayProducts(productService);
+        }
+
+
+        // ----------------------------------------------------
+        // BACK
+        // ----------------------------------------------------
+
+        else if (choice == 10)
+        {
+            break;
+        }
+
+
+        else
+        {
+            cout << "\nInvalid choice!\n";
+        }
+    }
+}
+
+
+// ============================================================
+// ADMIN MENU
+// ============================================================
+
+void adminMenu(
+    Admin* admin,
+    ProductService& productService
+)
+{
+    while (true)
+    {
+        cout << "\n";
+        cout << "============================================\n";
+        cout << "                ADMIN MENU\n";
+        cout << "============================================\n";
+
+        cout << "1. View Profile\n";
+        cout << "2. Product Management\n";
+        cout << "3. View All Orders\n";
+        cout << "4. Logout\n";
+
+
+        cout << "\nEnter choice: ";
+
+
+        int choice;
+        cin >> choice;
+
+
+        // ----------------------------------------------------
+        // PROFILE
+        // ----------------------------------------------------
+
+        if (choice == 1)
+        {
+            admin->displayProfile();
+        }
+
+
+        // ----------------------------------------------------
+        // PRODUCTS
+        // ----------------------------------------------------
+
+        else if (choice == 2)
+        {
+            adminProductMenu(
+                productService
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // ORDERS
+        // ----------------------------------------------------
+
+        else if (choice == 3)
+        {
+            cout << "\n";
+            cout << "============================================\n";
+            cout << "              ALL ORDERS\n";
+            cout << "============================================\n";
+
+
+            if (allOrders.empty())
+            {
+                cout << "\nNo orders available.\n";
+            }
+            else
+            {
+                for (const Order& order : allOrders)
+                {
+                    order.displayOrder();
+                }
+            }
+        }
+
+
+        // ----------------------------------------------------
+        // LOGOUT
+        // ----------------------------------------------------
+
+        else if (choice == 4)
+        {
+            cout << "\nAdmin logged out successfully.\n";
+            break;
+        }
+
+
+        else
+        {
+            cout << "\nInvalid choice!\n";
+        }
+    }
+}
+
+
+// ============================================================
+// STANDALONE PAYMENT
+// ============================================================
+
+void standalonePayment()
+{
+    double amount;
+
+
+    cout << "\n";
+    cout << "============================================\n";
+    cout << "            SMARTCART PAYMENT\n";
+    cout << "============================================\n";
+
+
+    cout << "Enter amount: Rs. ";
+    cin >> amount;
+
+
+    if (amount <= 0)
+    {
+        cout << "\nInvalid amount!\n";
+        return;
+    }
+
+
+    double discount = 0;
+
+
+    double finalAmount =
+        applyCoupon(
+            amount,
+            discount
+        );
+
+
+    string paymentMethod;
+
+
+    processPayment(
+        finalAmount,
+        paymentMethod
+    );
+}
+
+
+// ============================================================
 // MAIN
-// ======================================================
+// ============================================================
 
 int main()
 {
     AuthService auth;
 
-    int choice;
+    ProductService productService;
+
+
+    // Load products when application starts
+    loadProducts(productService);
 
 
     while (true)
     {
-        cout << "\n========================================" << endl;
-        cout << "              SMARTCART                " << endl;
-        cout << "========================================" << endl;
+        cout << "\n\n";
+        cout << "============================================\n";
+        cout << "                  SMARTCART\n";
+        cout << "============================================\n";
 
-        cout << "1. Register Customer" << endl;
-        cout << "2. Customer Login" << endl;
-        cout << "3. Admin Login" << endl;
-        cout << "4. Payment" << endl;
-        cout << "5. Exit" << endl;
+        cout << "1. Register Customer\n";
+        cout << "2. Customer Login\n";
+        cout << "3. Admin Login\n";
+        cout << "4. Payment Demo\n";
+        cout << "5. Exit\n";
 
-        cout << "Enter choice: ";
+
+        cout << "\nEnter choice: ";
+
+
+        int choice;
         cin >> choice;
 
 
-        // ==================================================
-        // 1. CUSTOMER REGISTRATION
-        // ==================================================
+        // ====================================================
+        // CUSTOMER REGISTRATION
+        // ====================================================
 
         if (choice == 1)
         {
@@ -265,8 +1796,10 @@ int main()
             string address;
 
 
-            cout << "\n===== CUSTOMER REGISTRATION ====="
-                 << endl;
+            cout << "\n";
+            cout << "============================================\n";
+            cout << "          CUSTOMER REGISTRATION\n";
+            cout << "============================================\n";
 
 
             cout << "Enter Customer ID: ";
@@ -281,17 +1814,16 @@ int main()
             cin >> username;
 
 
-            // Check username
-            if (auth.usernameExists(username))
+            if (
+                auth.usernameExists(username)
+            )
             {
-                cout << "Username already exists!"
-                     << endl;
-
+                cout << "\nUsername already exists!\n";
                 continue;
             }
 
 
-            // Password
+            // PASSWORD
             while (true)
             {
                 cout << "Enter Password: ";
@@ -299,17 +1831,14 @@ int main()
 
 
                 if (!password.empty())
-                {
                     break;
-                }
 
 
-                cout << "Password cannot be empty!"
-                     << endl;
+                cout << "Password cannot be empty!\n";
             }
 
 
-            // Phone
+            // PHONE
             while (true)
             {
                 cout << "Enter Phone: ";
@@ -317,14 +1846,11 @@ int main()
 
 
                 if (isValidPhone(phone))
-                {
                     break;
-                }
 
 
-                cout << "Invalid phone number! "
-                     << "Enter exactly 10 digits."
-                     << endl;
+                cout << "Invalid phone number!\n";
+                cout << "Enter exactly 10 digits.\n";
             }
 
 
@@ -332,7 +1858,6 @@ int main()
             cin >> address;
 
 
-            // Create customer
             Customer customer(
                 id,
                 name,
@@ -343,23 +1868,24 @@ int main()
             );
 
 
-            // Register
-            if (auth.registerCustomer(customer))
+            if (
+                auth.registerCustomer(customer)
+            )
             {
-                cout << "\nRegistration successful!"
-                     << endl;
+                cout << "\n";
+                cout << "Registration successful!\n";
             }
             else
             {
-                cout << "\nRegistration failed!"
-                     << endl;
+                cout << "\n";
+                cout << "Registration failed!\n";
             }
         }
 
 
-        // ==================================================
-        // 2. CUSTOMER LOGIN
-        // ==================================================
+        // ====================================================
+        // CUSTOMER LOGIN
+        // ====================================================
 
         else if (choice == 2)
         {
@@ -367,8 +1893,10 @@ int main()
             string password;
 
 
-            cout << "\n===== CUSTOMER LOGIN ====="
-                 << endl;
+            cout << "\n";
+            cout << "============================================\n";
+            cout << "             CUSTOMER LOGIN\n";
+            cout << "============================================\n";
 
 
             cout << "Username: ";
@@ -388,174 +1916,24 @@ int main()
 
             if (customer != nullptr)
             {
-                cout << "\nLogin successful!"
-                     << endl;
+                cout << "\nLogin successful!\n";
 
 
-                // ==========================================
-                // CUSTOMER MENU
-                // ==========================================
-
-                while (true)
-                {
-                    cout << "\n===== CUSTOMER MENU ====="
-                         << endl;
-
-                    cout << "1. View Profile"
-                         << endl;
-
-                    cout << "2. Update Profile"
-                         << endl;
-
-                    cout << "3. Logout"
-                         << endl;
-
-                    cout << "Enter choice: ";
-
-
-                    int customerChoice;
-                    cin >> customerChoice;
-
-
-                    // --------------------------------------
-                    // VIEW PROFILE
-                    // --------------------------------------
-
-                    if (customerChoice == 1)
-                    {
-                        customer->displayProfile();
-                    }
-
-
-                    // --------------------------------------
-                    // UPDATE PROFILE
-                    // --------------------------------------
-
-                    else if (customerChoice == 2)
-                    {
-                        int updateChoice;
-
-
-                        cout << "\n===== UPDATE PROFILE ====="
-                             << endl;
-
-                        cout << "1. Update Name"
-                             << endl;
-
-                        cout << "2. Update Phone"
-                             << endl;
-
-                        cout << "3. Update Address"
-                             << endl;
-
-                        cout << "Enter choice: ";
-
-                        cin >> updateChoice;
-
-
-                        // Update Name
-                        if (updateChoice == 1)
-                        {
-                            string newName;
-
-
-                            cout << "Enter new name: ";
-                            cin >> newName;
-
-
-                            customer->setName(newName);
-
-
-                            cout << "Name updated successfully!"
-                                 << endl;
-                        }
-
-
-                        // Update Phone
-                        else if (updateChoice == 2)
-                        {
-                            string newPhone;
-
-
-                            cout << "Enter new phone: ";
-                            cin >> newPhone;
-
-
-                            if (isValidPhone(newPhone))
-                            {
-                                customer->setPhone(newPhone);
-
-
-                                cout << "Phone updated successfully!"
-                                     << endl;
-                            }
-                            else
-                            {
-                                cout << "Invalid phone number!"
-                                     << endl;
-                            }
-                        }
-
-
-                        // Update Address
-                        else if (updateChoice == 3)
-                        {
-                            string newAddress;
-
-
-                            cout << "Enter new address: ";
-                            cin >> newAddress;
-
-
-                            customer->setAddress(newAddress);
-
-
-                            cout << "Address updated successfully!"
-                                 << endl;
-                        }
-
-
-                        else
-                        {
-                            cout << "Invalid choice!"
-                                 << endl;
-                        }
-                    }
-
-
-                    // --------------------------------------
-                    // LOGOUT
-                    // --------------------------------------
-
-                    else if (customerChoice == 3)
-                    {
-                        cout << "Logged out successfully."
-                             << endl;
-
-                        break;
-                    }
-
-
-                    else
-                    {
-                        cout << "Invalid choice!"
-                             << endl;
-                    }
-                }
+                customerMenu(
+                    customer,
+                    productService
+                );
             }
-
-
             else
             {
-                cout << "\nInvalid username or password!"
-                     << endl;
+                cout << "\nInvalid username or password!\n";
             }
         }
 
 
-        // ==================================================
-        // 3. ADMIN LOGIN
-        // ==================================================
+        // ====================================================
+        // ADMIN LOGIN
+        // ====================================================
 
         else if (choice == 3)
         {
@@ -563,8 +1941,10 @@ int main()
             string password;
 
 
-            cout << "\n===== ADMIN LOGIN ====="
-                 << endl;
+            cout << "\n";
+            cout << "============================================\n";
+            cout << "               ADMIN LOGIN\n";
+            cout << "============================================\n";
 
 
             cout << "Username: ";
@@ -584,50 +1964,49 @@ int main()
 
             if (admin != nullptr)
             {
-                cout << "\nAdmin login successful!"
-                     << endl;
+                cout << "\nAdmin login successful!\n";
 
-                admin->displayProfile();
+
+                adminMenu(
+                    admin,
+                    productService
+                );
             }
             else
             {
-                cout << "\nInvalid admin username or password!"
-                     << endl;
+                cout << "\nInvalid admin username or password!\n";
             }
         }
 
 
-        // ==================================================
-        // 4. PAYMENT
-        // ==================================================
+        // ====================================================
+        // PAYMENT DEMO
+        // ====================================================
 
         else if (choice == 4)
         {
-            paymentMenu();
+            standalonePayment();
         }
 
 
-        // ==================================================
-        // 5. EXIT
-        // ==================================================
+        // ====================================================
+        // EXIT
+        // ====================================================
 
         else if (choice == 5)
         {
-            cout << "\nThank you for using SmartCart!"
-                 << endl;
+            cout << "\n";
+            cout << "============================================\n";
+            cout << " Thank you for using SmartCart!\n";
+            cout << "============================================\n";
 
             break;
         }
 
 
-        // ==================================================
-        // INVALID CHOICE
-        // ==================================================
-
         else
         {
-            cout << "\nInvalid choice!"
-                 << endl;
+            cout << "\nInvalid choice!\n";
         }
     }
 
