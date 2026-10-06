@@ -8,23 +8,30 @@
 
 using namespace std;
 
-class AuthService {
+class AuthService
+{
 private:
     vector<Customer> customers;
     vector<Admin> admins;
 
 public:
     AuthService();
-    
+
     bool usernameExists(const string& username) const;
+
+    bool userIdExists(const string& userId) const;
 
     bool registerCustomer(const Customer& customer);
 
-    Customer* loginCustomer(const string& username,
-                            const string& password);
+    Customer* loginCustomer(
+        const string& username,
+        const string& password
+    );
 
-    Admin* loginAdmin(const string& username,
-                      const string& password);
+    Admin* loginAdmin(
+        const string& username,
+        const string& password
+    );
 };
 
 #endif

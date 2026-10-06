@@ -1058,9 +1058,7 @@ void customerMenu(
     ProductService& productService
 )
 {
-    // Every logged-in customer gets a cart
     Cart customerCart;
-
 
     while (true)
     {
@@ -1068,88 +1066,57 @@ void customerMenu(
         cout << "============================================\n";
         cout << "              CUSTOMER MENU\n";
         cout << "============================================\n";
-
         cout << "1. View Profile\n";
         cout << "2. Update Profile\n";
-        cout << "3. View Products\n";
-        cout << "4. Shopping Cart\n";
-        cout << "5. Place Order\n";
-        cout << "6. My Orders\n";
-        cout << "7. Cancel Order\n";
-        cout << "8. Logout\n";
-
+        cout << "3. View All Products\n";
+        cout << "4. Search Products\n";
+        cout << "5. Filter Products\n";
+        cout << "6. Sort Products\n";
+        cout << "7. Shopping Cart\n";
+        cout << "8. Place Order\n";
+        cout << "9. My Orders\n";
+        cout << "10. Cancel Order\n";
+        cout << "11. Logout\n";
 
         cout << "\nEnter choice: ";
-
-
         int choice;
         cin >> choice;
-
-
-        // ----------------------------------------------------
-        // PROFILE
-        // ----------------------------------------------------
 
         if (choice == 1)
         {
             customer->displayProfile();
         }
-
-
-        // ----------------------------------------------------
-        // UPDATE PROFILE
-        // ----------------------------------------------------
-
         else if (choice == 2)
         {
             cout << "\n";
             cout << "============================================\n";
             cout << "             UPDATE PROFILE\n";
             cout << "============================================\n";
-
             cout << "1. Update Name\n";
             cout << "2. Update Phone\n";
             cout << "3. Update Address\n";
-
-
             cout << "\nEnter choice: ";
-
 
             int updateChoice;
             cin >> updateChoice;
 
-
-            // NAME
             if (updateChoice == 1)
             {
                 string name;
-
-
                 cout << "Enter new name: ";
                 cin >> name;
-
-
                 customer->setName(name);
-
-
                 cout << "\nName updated successfully!\n";
             }
-
-
-            // PHONE
             else if (updateChoice == 2)
             {
                 string phone;
-
-
                 cout << "Enter new phone: ";
                 cin >> phone;
-
 
                 if (isValidPhone(phone))
                 {
                     customer->setPhone(phone);
-
                     cout << "\nPhone updated successfully!\n";
                 }
                 else
@@ -1157,102 +1124,188 @@ void customerMenu(
                     cout << "\nInvalid phone number!\n";
                 }
             }
-
-
-            // ADDRESS
             else if (updateChoice == 3)
             {
                 string address;
-
-
                 cout << "Enter new address: ";
                 cin >> address;
-
-
                 customer->setAddress(address);
-
-
                 cout << "\nAddress updated successfully!\n";
             }
-
-
             else
             {
                 cout << "\nInvalid choice!\n";
             }
         }
-
-
-        // ----------------------------------------------------
-        // PRODUCTS
-        // ----------------------------------------------------
-
         else if (choice == 3)
         {
-            displayProducts(
-                productService
-            );
+            displayProducts(productService);
         }
-
-
-        // ----------------------------------------------------
-        // CART
-        // ----------------------------------------------------
-
         else if (choice == 4)
         {
-            cartMenu(
-                customerCart,
-                productService
-            );
+            string keyword;
+
+            cout << "\n============================================\n";
+            cout << "             SEARCH PRODUCTS\n";
+            cout << "============================================\n";
+            cout << "Enter product name, category or brand: ";
+            cin >> keyword;
+
+            vector<Product> results =
+                productService.searchProducts(keyword);
+
+            cout << "\n========== SEARCH RESULTS ==========\n";
+
+            if (results.empty())
+            {
+                cout << "No products found.\n";
+            }
+            else
+            {
+                for (const Product& product : results)
+                {
+                    product.display();
+                }
+            }
+
+            cout << "====================================\n";
         }
-
-
-        // ----------------------------------------------------
-        // PLACE ORDER
-        // ----------------------------------------------------
-
         else if (choice == 5)
         {
-            placeOrder(
-                customerCart,
-                productService,
-                customer
-            );
+            cout << "\n============================================\n";
+            cout << "             FILTER PRODUCTS\n";
+            cout << "============================================\n";
+            cout << "1. Filter by Category\n";
+            cout << "2. Filter by Price Range\n";
+            cout << "3. Back\n";
+            cout << "\nEnter choice: ";
+
+            int filterChoice;
+            cin >> filterChoice;
+
+            if (filterChoice == 1)
+            {
+                string category;
+                cout << "\nEnter category: ";
+                cin >> category;
+
+                vector<Product> results =
+                    productService.filterByCategory(category);
+
+                cout << "\n========== FILTER RESULTS ==========\n";
+
+                if (results.empty())
+                {
+                    cout << "No products found in this category.\n";
+                }
+                else
+                {
+                    for (const Product& product : results)
+                    {
+                        product.display();
+                    }
+                }
+
+                cout << "====================================\n";
+            }
+            else if (filterChoice == 2)
+            {
+                double minPrice, maxPrice;
+
+                cout << "\nEnter minimum price: ";
+                cin >> minPrice;
+                cout << "Enter maximum price: ";
+                cin >> maxPrice;
+
+                if (minPrice > maxPrice)
+                {
+                    cout << "\nInvalid price range!\n";
+                }
+                else
+                {
+                    vector<Product> results =
+                        productService.filterByPrice(minPrice, maxPrice);
+
+                    cout << "\n========== FILTER RESULTS ==========\n";
+
+                    if (results.empty())
+                    {
+                        cout << "No products found in this price range.\n";
+                    }
+                    else
+                    {
+                        for (const Product& product : results)
+                        {
+                            product.display();
+                        }
+                    }
+
+                    cout << "====================================\n";
+                }
+            }
+            else if (filterChoice != 3)
+            {
+                cout << "\nInvalid choice!\n";
+            }
         }
-
-
-        // ----------------------------------------------------
-        // MY ORDERS
-        // ----------------------------------------------------
-
         else if (choice == 6)
+        {
+            cout << "\n============================================\n";
+            cout << "             SORT PRODUCTS\n";
+            cout << "============================================\n";
+            cout << "1. Price - Low to High\n";
+            cout << "2. Price - High to Low\n";
+            cout << "3. Rating - High to Low\n";
+            cout << "4. Back\n";
+            cout << "\nEnter choice: ";
+
+            int sortChoice;
+            cin >> sortChoice;
+
+            if (sortChoice == 1)
+            {
+                productService.sortByPriceAscending();
+                cout << "\nProducts sorted by price: Low to High\n";
+                displayProducts(productService);
+            }
+            else if (sortChoice == 2)
+            {
+                productService.sortByPriceDescending();
+                cout << "\nProducts sorted by price: High to Low\n";
+                displayProducts(productService);
+            }
+            else if (sortChoice == 3)
+            {
+                productService.sortByRatingDescending();
+                cout << "\nProducts sorted by rating: High to Low\n";
+                displayProducts(productService);
+            }
+            else if (sortChoice != 4)
+            {
+                cout << "\nInvalid choice!\n";
+            }
+        }
+        else if (choice == 7)
+        {
+            cartMenu(customerCart, productService);
+        }
+        else if (choice == 8)
+        {
+            placeOrder(customerCart, productService, customer);
+        }
+        else if (choice == 9)
         {
             viewOrders(customer);
         }
-
-
-        // ----------------------------------------------------
-        // CANCEL ORDER
-        // ----------------------------------------------------
-
-        else if (choice == 7)
+        else if (choice == 10)
         {
             cancelOrder(customer);
         }
-
-
-        // ----------------------------------------------------
-        // LOGOUT
-        // ----------------------------------------------------
-
-        else if (choice == 8)
+        else if (choice == 11)
         {
             cout << "\nLogged out successfully.\n";
             break;
         }
-
-
         else
         {
             cout << "\nInvalid choice!\n";
@@ -1781,106 +1834,148 @@ int main()
         int choice;
         cin >> choice;
 
+// ====================================================
+// CUSTOMER REGISTRATION
+// ====================================================
 
-        // ====================================================
-        // CUSTOMER REGISTRATION
-        // ====================================================
+if (choice == 1)
+{
+    string id;
+    string name;
+    string username;
+    string password;
+    string phone;
+    string address;
 
-        if (choice == 1)
+
+    cout << "\n";
+    cout << "============================================\n";
+    cout << "          CUSTOMER REGISTRATION\n";
+    cout << "============================================\n";
+
+
+    // ----------------------------------------------------
+    // CUSTOMER ID
+    // ----------------------------------------------------
+
+    cout << "Enter Customer ID: ";
+    cin >> id;
+
+
+    // Check duplicate Customer ID
+    if (auth.userIdExists(id))
+    {
+        cout << "\nCustomer ID already exists!\n";
+        cout << "Please use a different Customer ID.\n";
+
+        continue;
+    }
+
+
+    // ----------------------------------------------------
+    // NAME
+    // ----------------------------------------------------
+
+    cout << "Enter Name: ";
+    cin >> name;
+
+
+    // ----------------------------------------------------
+    // USERNAME
+    // ----------------------------------------------------
+
+    cout << "Enter Username: ";
+    cin >> username;
+
+
+    // Check duplicate username
+    if (auth.usernameExists(username))
+    {
+        cout << "\nUsername already exists!\n";
+        cout << "Please use a different username.\n";
+
+        continue;
+    }
+
+
+    // ----------------------------------------------------
+    // PASSWORD
+    // ----------------------------------------------------
+
+    while (true)
+    {
+        cout << "Enter Password: ";
+        cin >> password;
+
+
+        if (!password.empty())
         {
-            string id;
-            string name;
-            string username;
-            string password;
-            string phone;
-            string address;
-
-
-            cout << "\n";
-            cout << "============================================\n";
-            cout << "          CUSTOMER REGISTRATION\n";
-            cout << "============================================\n";
-
-
-            cout << "Enter Customer ID: ";
-            cin >> id;
-
-
-            cout << "Enter Name: ";
-            cin >> name;
-
-
-            cout << "Enter Username: ";
-            cin >> username;
-
-
-            if (
-                auth.usernameExists(username)
-            )
-            {
-                cout << "\nUsername already exists!\n";
-                continue;
-            }
-
-
-            // PASSWORD
-            while (true)
-            {
-                cout << "Enter Password: ";
-                cin >> password;
-
-
-                if (!password.empty())
-                    break;
-
-
-                cout << "Password cannot be empty!\n";
-            }
-
-
-            // PHONE
-            while (true)
-            {
-                cout << "Enter Phone: ";
-                cin >> phone;
-
-
-                if (isValidPhone(phone))
-                    break;
-
-
-                cout << "Invalid phone number!\n";
-                cout << "Enter exactly 10 digits.\n";
-            }
-
-
-            cout << "Enter Address: ";
-            cin >> address;
-
-
-            Customer customer(
-                id,
-                name,
-                username,
-                password,
-                phone,
-                address
-            );
-
-
-            if (
-                auth.registerCustomer(customer)
-            )
-            {
-                cout << "\n";
-                cout << "Registration successful!\n";
-            }
-            else
-            {
-                cout << "\n";
-                cout << "Registration failed!\n";
-            }
+            break;
         }
+
+
+        cout << "Password cannot be empty!\n";
+    }
+
+
+    // ----------------------------------------------------
+    // PHONE
+    // ----------------------------------------------------
+
+    while (true)
+    {
+        cout << "Enter Phone: ";
+        cin >> phone;
+
+
+        if (isValidPhone(phone))
+        {
+            break;
+        }
+
+
+        cout << "Invalid phone number!\n";
+        cout << "Enter exactly 10 digits.\n";
+    }
+
+
+    // ----------------------------------------------------
+    // ADDRESS
+    // ----------------------------------------------------
+
+    cout << "Enter Address: ";
+    cin >> address;
+
+
+    // ----------------------------------------------------
+    // CREATE CUSTOMER
+    // ----------------------------------------------------
+
+    Customer customer(
+        id,
+        name,
+        username,
+        password,
+        phone,
+        address
+    );
+
+
+    // ----------------------------------------------------
+    // REGISTER CUSTOMER
+    // ----------------------------------------------------
+
+    if (auth.registerCustomer(customer))
+    {
+        cout << "\n";
+        cout << "Registration successful!\n";
+    }
+    else
+    {
+        cout << "\n";
+        cout << "Registration failed!\n";
+    }
+}
 
 
         // ====================================================

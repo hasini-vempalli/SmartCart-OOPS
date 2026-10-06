@@ -1,7 +1,12 @@
 #include "services/AuthService.h"
 
-AuthService::AuthService() {
 
+// ============================================================
+// CONSTRUCTOR
+// ============================================================
+
+AuthService::AuthService()
+{
     Admin admin(
         "A001",
         "Administrator",
@@ -14,16 +19,29 @@ AuthService::AuthService() {
     admins.push_back(admin);
 }
 
-bool AuthService::usernameExists(const string& username) const {
 
-    for (const Customer& customer : customers) {
-        if (customer.getUsername() == username) {
+// ============================================================
+// CHECK USERNAME
+// ============================================================
+
+bool AuthService::usernameExists(
+    const string& username
+) const
+{
+    // Check customers
+    for (const Customer& customer : customers)
+    {
+        if (customer.getUsername() == username)
+        {
             return true;
         }
     }
 
-    for (const Admin& admin : admins) {
-        if (admin.getUsername() == username) {
+    // Check admins
+    for (const Admin& admin : admins)
+    {
+        if (admin.getUsername() == username)
+        {
             return true;
         }
     }
@@ -32,26 +50,79 @@ bool AuthService::usernameExists(const string& username) const {
 }
 
 
-bool AuthService::registerCustomer(const Customer& customer) {
+// ============================================================
+// CHECK USER ID
+// ============================================================
 
-    if (usernameExists(customer.getUsername())) {
+bool AuthService::userIdExists(
+    const string& userId
+) const
+{
+    // Check customer IDs
+    for (const Customer& customer : customers)
+    {
+        if (customer.getUserId() == userId)
+        {
+            return true;
+        }
+    }
+
+    // Check admin IDs
+    for (const Admin& admin : admins)
+    {
+        if (admin.getUserId() == userId)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+// ============================================================
+// REGISTER CUSTOMER
+// ============================================================
+
+bool AuthService::registerCustomer(
+    const Customer& customer
+)
+{
+    // Check duplicate username
+    if (usernameExists(customer.getUsername()))
+    {
         return false;
     }
 
+    // Check duplicate user ID
+    if (userIdExists(customer.getUserId()))
+    {
+        return false;
+    }
+
+    // Add customer
     customers.push_back(customer);
 
     return true;
 }
 
 
-Customer* AuthService::loginCustomer(const string& username,
-                                     const string& password) {
+// ============================================================
+// CUSTOMER LOGIN
+// ============================================================
 
-    for (Customer& customer : customers) {
-
-        if (customer.getUsername() == username &&
-            customer.getPassword() == password) {
-
+Customer* AuthService::loginCustomer(
+    const string& username,
+    const string& password
+)
+{
+    for (Customer& customer : customers)
+    {
+        if (
+            customer.getUsername() == username &&
+            customer.getPassword() == password
+        )
+        {
             return &customer;
         }
     }
@@ -60,14 +131,22 @@ Customer* AuthService::loginCustomer(const string& username,
 }
 
 
-Admin* AuthService::loginAdmin(const string& username,
-                               const string& password) {
+// ============================================================
+// ADMIN LOGIN
+// ============================================================
 
-    for (Admin& admin : admins) {
-
-        if (admin.getUsername() == username &&
-            admin.getPassword() == password) {
-
+Admin* AuthService::loginAdmin(
+    const string& username,
+    const string& password
+)
+{
+    for (Admin& admin : admins)
+    {
+        if (
+            admin.getUsername() == username &&
+            admin.getPassword() == password
+        )
+        {
             return &admin;
         }
     }
